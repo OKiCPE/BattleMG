@@ -119,8 +119,9 @@ public class TaskScheduler implements Runnable {
         tasks = new SingleTask[number];
         queue = new ArrayBlockingQueue<>(number + 2);
         for (int i = 0; i < number; i++) {
-            tasks[i] = new SingleTask(dbLock);
+            tasks[i] = new SingleTask(dbLock, i);
         }
+        SingleTask.setRun(number);
         isReadyLock.lock();
         isReady = true;
         System.out.println("=======================");

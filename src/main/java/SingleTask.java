@@ -30,6 +30,7 @@ public class SingleTask implements Runnable {
     static private String email;
     static private String pass;
     static DesiredCapabilities capabilities;
+    static int[] wasRun;
 
     static {
         ArrayList<String> cliArgsCap = new ArrayList<>();
@@ -69,13 +70,22 @@ public class SingleTask implements Runnable {
     private CyclicBarrier externalStop;
     private ReentrantLock lock = new ReentrantLock();
     Condition condition = lock.newCondition();
+    int currNumber;
 
-    SingleTask(ReentrantLock dbLock) {
+    SingleTask(ReentrantLock dbLock, int l) {
         taskNumber++;
         reentrantLock = dbLock;
+        currNumber = l;
         Thread thread = new Thread(this, "SingleTask-" + taskNumber);
         thread.start();
 
+    }
+
+    static void setRun(int number) {
+        wasRun = new int[number];
+        for (int i = 0; i < number; i++) {
+            wasRun[i] = 0;
+        }
     }
 
     boolean isBusy() {
@@ -103,6 +113,11 @@ public class SingleTask implements Runnable {
         internal.lock();
         isBusy = false;
         isReady = false;
+        //   System.out.println(battle.getBattleId());
+
+        Session session = HibernateFactory.getSession();
+        Transaction transaction = session.beginTransaction();
+
 
         String url = BASE_URL + battle.getBattleId();
         long start = System.currentTimeMillis();
@@ -142,8 +157,7 @@ public class SingleTask implements Runnable {
                 log.error("part ");
             }
         }
-        Session session = HibernateFactory.getSession();
-        Transaction transaction = session.beginTransaction();
+
         //   start = System.currentTimeMillis();
         String[] teamA = new String[0];
         if (!rawTeamA.isEmpty()) {
@@ -197,9 +211,18 @@ public class SingleTask implements Runnable {
         stop = System.currentTimeMillis();
         message.append("\tprocessed in ");
         message.append((stop - start) / 1000.0f);
-
-
         log.error(message.toString());
+
+        //  driver.close();
+
+        wasRun[currNumber]++;
+        if (wasRun[currNumber] >= 100) {
+            wasRun[currNumber] = 0;
+            log.error("browaser restart");
+//            driver.quit();
+            init();
+        }
+
         internalCondition.signal();
         internal.unlock();
     }
@@ -225,7 +248,7 @@ public class SingleTask implements Runnable {
 
     private void init() {
         driver = new PhantomJSDriver(caps);
-
+//        System.out.println("reinit");
        /* DesiredCapabilities capabilities = DesiredCapabilities.chrome();
 
         HashMap<String, Object> images = new HashMap<String, Object>();
@@ -249,7 +272,7 @@ public class SingleTask implements Runnable {
 //        driver = new HtmlUnitDriver();
 //        driver.setJavascriptEnabled(true);
         //       driver.navigate().to(BASE_URL);
-        driver.get(BASE_URL);
+//        driver.get(BASE_URL);
         driver.navigate().to(BASE_URL);
         driver.findElement(By.id("email")).sendKeys(email);
         driver.findElement(By.id("password")).sendKeys(pass);

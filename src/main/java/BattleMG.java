@@ -21,22 +21,30 @@ public class BattleMG {
         boolean readyToRestart = false;
         for (int p = 0; p < 50; p++) {
             for (int i = pageCount; i > 0; i--) {
-                log.error("added " + i);
+               // log.error("added " + i);
                 service.submit(new GetBattles(i, taskScheduler, dbLock, restart, restartCondition, readyToRestart));
             }
-            log.error("aa");
+           /* log.error("aa");
+            System.out.println(readyToRestart);
             while (!readyToRestart) {
                 log.error("before wait");
                 restart.lock();
+                log.error("aaaaaaa");
                 try {
+                    log.error("bbbbbb");
                     restartCondition.await();
+                    System.out.println(readyToRestart);
+                    log.error("cccccc");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                System.out.println("ddd");
                 restart.unlock();
-                readyToRestart = false;
+                System.out.println("eeeeee");
+                //readyToRestart = false;
             }
-            log.error("after wait");
+            log.error("after wait");*/
+            //readyToRestart = false;
         }
         service.shutdown();
         try {

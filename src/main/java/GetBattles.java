@@ -71,12 +71,15 @@ public class GetBattles implements Runnable {
         Document doc = get.execute().parse();
         Elements replays = doc.select("a[class=replay__item]");
         log.error("                     =============== PAGE " + pageNumber + " ================");
-        if (pageNumber == 1) {
+       /* if (pageNumber <= 2) {
+            System.out.println("beforeready");
             restart.lock();
-            restartCondition.signal();
+            System.out.println("readyrestart");
             readyToRestart = true;
+            System.out.println("ready to restart "+ readyToRestart);
+            restartCondition.signal();
             restart.unlock();
-        }
+        }*/
         for (Element replay : replays) {
             ReplayParser parser = new ReplayParser(replay, taskScheduler, reentrantLock);
             Thread thread = new Thread(parser);
