@@ -71,6 +71,14 @@ public class SingleTask implements Runnable {
     private ReentrantLock lock = new ReentrantLock();
     Condition condition = lock.newCondition();
     int currNumber;
+    private String rawTeamA;
+    private String rawTeamB;
+    private List<WebElement> webElements;
+    private String[] teamA;
+    private String[] teamB;
+    private StringBuilder message;
+    private long tStart;
+    private long tStop;
 
     SingleTask(ReentrantLock dbLock, int l) {
         taskNumber++;
@@ -109,6 +117,31 @@ public class SingleTask implements Runnable {
         internal.unlock();
     }
 
+
+    void parceData() {
+        message = new StringBuilder();
+        String url = BASE_URL + battle.getBattleId();
+        tStart = System.currentTimeMillis();
+        driver.navigate().to(url);
+        tStop = System.currentTimeMillis();
+        message.append("Loaded in ");
+        String x = Float.toString((tStop - tStart) / 1000.0f);
+        message.append((tStop - tStart) / 1000.0f);
+        message.append("\t");
+        message.append(driver.getCurrentUrl());
+        message.append("\t");
+        tStart = System.currentTimeMillis();
+        webElements = driver.findElements(By.className("team-players"));
+        rawTeamA = webElements.get(0).getText();
+        rawTeamB = webElements.get(1).getText();
+        teamA = new String[0];
+        teamA = pattern.split(rawTeamA);
+        teamB = new String[0];
+        teamB = pattern.split(rawTeamB);
+        //  driver.close();
+
+    }
+
     private void process() {
         internal.lock();
         isBusy = false;
@@ -118,58 +151,35 @@ public class SingleTask implements Runnable {
         Session session = HibernateFactory.getSession();
         Transaction transaction = session.beginTransaction();
 
-
-        String url = BASE_URL + battle.getBattleId();
-        long start = System.currentTimeMillis();
-        driver.navigate().to(url);
-        long stop = System.currentTimeMillis();
-        StringBuilder message = new StringBuilder();
-        message.append("Loaded in ");
-        String x = Float.toString((stop - start) / 1000.0f);
-        message.append((stop - start) / 1000.0f);
-        message.append("\t");
-        message.append(driver.getCurrentUrl());
-        message.append("\t");
-        start = System.currentTimeMillis();
-        String rawTeamA = "";
-        List<WebElement> webElements = driver.findElements(By.className("team-players"));
         try {
-            //rawTeamA = webElements.get(0).findElements(By.className("team-players")).get(0).getText();
-            rawTeamA = webElements.get(0).getText();
-            // System.out.println(rawTeamA);
+            parceData();
+            if ((rawTeamA.isEmpty()) || (rawTeamB.isEmpty())) {
+                log.error("REPARSE " + battle.getBattleId());
+                parceData();
+            }
         } catch (Exception e) {
-            driver.navigate().to(url);
-            webElements = driver.findElements(By.className("team-players"));
+            log.error("================================CRASHED at BattleId " + battle.getBattleId());
+            e.printStackTrace();
             try {
-                rawTeamA = webElements.get(0).getText();
-            } catch (Exception k) {
-                log.error("part ");
+                driver.quit();
+            } catch (Exception p) {
+                e.printStackTrace();
             }
-            log.error("Error parsing Team A " + x);
-            log.error(url);
-        }
-        if (rawTeamA.isEmpty()) {
-            driver.navigate().to(url);
-            webElements = driver.findElements(By.className("team-players"));
-            try {
-                rawTeamA = webElements.get(0).getText();
-            } catch (Exception k) {
-                log.error("part ");
-            }
+
+            init();
+            parceData();
+        } finally {
+
         }
 
-        //   start = System.currentTimeMillis();
-        String[] teamA = new String[0];
+
         if (!rawTeamA.isEmpty()) {
-            teamA = pattern.split(rawTeamA);
             if (teamA.length > 0) {
                 for (String login : teamA) {
                     PlayersInBattle playersInBattle = new PlayersInBattle();
                     playersInBattle.setBattle(battle);
                     battle.setTeamA(teamA.length);
-
                     Player player = Player.getPlayer(login, session, reentrantLock);
-
                     playersInBattle.setPlayer(player);
                     playersInBattle.setTeam(0);
                     session.saveOrUpdate(playersInBattle);
@@ -178,15 +188,8 @@ public class SingleTask implements Runnable {
         }
         message.append("Team A = ");
         message.append(teamA.length);
-        String rawTeamB = "";
-        try {
-            // rawTeamB = driver.findElements(By.className("team-players")).get(1).getText();
-            rawTeamB = webElements.get(1).getText();
-        } catch (Exception e) {
-            log.error("Error parsing Team B " + x);
-            log.error(url);
-        }
-        String[] teamB = new String[0];
+
+
         if (!rawTeamB.isEmpty()) {
             teamB = pattern.split(rawTeamB);
             if (teamB.length > 0) {
@@ -208,20 +211,23 @@ public class SingleTask implements Runnable {
         session.saveOrUpdate(battle);
         transaction.commit();
         session.close();
-        stop = System.currentTimeMillis();
+        tStop = System.currentTimeMillis();
         message.append("\tprocessed in ");
-        message.append((stop - start) / 1000.0f);
+        message.append((tStop - tStart) / 1000.0f);
         log.error(message.toString());
 
         //  driver.close();
 
         wasRun[currNumber]++;
-        if (wasRun[currNumber] >= 100) {
+        if (wasRun[currNumber] >= 50) {
             wasRun[currNumber] = 0;
-            log.error("browaser restart");
-//            driver.quit();
+            log.error("================================ browser restarted =======================");
+            driver.quit();
             init();
         }
+
+        rawTeamA = "";
+        rawTeamB = "";
 
         internalCondition.signal();
         internal.unlock();
