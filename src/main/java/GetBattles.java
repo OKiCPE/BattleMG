@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -32,6 +33,7 @@ public class GetBattles implements Runnable {
     ReentrantLock restart;
     Condition restartCondition;
     boolean readyToRestart;
+    AtomicInteger ai;
 
     static {
         Properties prop = GetProperties.get();
@@ -41,7 +43,8 @@ public class GetBattles implements Runnable {
         identity_name = prop.getProperty("identity_name");
     }
 
-    GetBattles(int pageNumber, TaskScheduler taskScheduler, ReentrantLock reentrantLock, ReentrantLock restart, Condition restartCondition, boolean readyToRestart) {
+    GetBattles(AtomicInteger ai, int pageNumber, TaskScheduler taskScheduler, ReentrantLock reentrantLock, ReentrantLock restart, Condition restartCondition, boolean readyToRestart) {
+        this.ai = ai;
         this.taskScheduler = taskScheduler;
         this.pageNumber = pageNumber;
         this.reentrantLock = reentrantLock;
@@ -81,7 +84,7 @@ public class GetBattles implements Runnable {
             restart.unlock();
         }*/
         for (Element replay : replays) {
-            ReplayParser parser = new ReplayParser(replay, taskScheduler, reentrantLock);
+            ReplayParser parser = new ReplayParser(pageNumber, replay, taskScheduler, reentrantLock);
             Thread thread = new Thread(parser);
             thread.start();
             try {
@@ -89,6 +92,10 @@ public class GetBattles implements Runnable {
             } catch (InterruptedException e) {
                 log.error("Thread interrupted " + e);
             }
+        }
+        synchronized (ai) {
+            ai.decrementAndGet();
+            ai.notifyAll();
         }
     }
 
@@ -100,5 +107,17 @@ public class GetBattles implements Runnable {
         } catch (IOException e) {
             log.error("IOException at page " + pageNumber + " " + e);
         }
+
+
+      /*  try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("TASK RUN WITH " + pageNumber);
+        synchronized (ai) {
+            ai.decrementAndGet();
+            ai.notifyAll();
+        }*/
     }
 }

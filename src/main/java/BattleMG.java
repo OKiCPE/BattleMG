@@ -4,6 +4,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -18,12 +19,30 @@ public class BattleMG {
         ExecutorService service = Executors.newFixedThreadPool(battlesThreads);
         ReentrantLock restart = new ReentrantLock();
         Condition restartCondition = restart.newCondition();
+        AtomicInteger ai = new AtomicInteger(0);
         boolean readyToRestart = false;
-        for (int p = 0; p < 200_000; p++) {
+
+        for (int pp = 0; pp < 5_000_000; pp++) {
+            for (int z = pageCount; z > 0; z--) {
+                synchronized (ai) {
+                    while (ai.get() >= playersThreads) {
+                        try {
+                            ai.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    Thread thd = new Thread(new GetBattles(ai, z, taskScheduler, dbLock, restart, restartCondition, readyToRestart));
+                    thd.start();
+                    ai.incrementAndGet();
+                }
+            }
+        }
+        /*for (int p = 0; p < 100_000; p++) {
             for (int i = pageCount; i > 0; i--) {
                 // log.error("added " + i);
-                service.submit(new GetBattles(i, taskScheduler, dbLock, restart, restartCondition, readyToRestart));
-            }
+                service.submit(new GetBattles(ai, i, taskScheduler, dbLock, restart, restartCondition, readyToRestart));
+            }*/
            /* log.error("aa");
             System.out.println(readyToRestart);
             while (!readyToRestart) {
@@ -44,9 +63,11 @@ public class BattleMG {
                 //readyToRestart = false;
             }
             log.error("after wait");*/
-            //readyToRestart = false;
-        }
+        //readyToRestart = false;
+      /*  }
+        System.out.println("BEFORE");
         service.shutdown();
+        System.out.println("AFTER");
         try {
             while (!service.awaitTermination(1, TimeUnit.SECONDS)) {
                 log.info("Awaiting completion of threads.");
@@ -54,7 +75,7 @@ public class BattleMG {
         } catch (
                 InterruptedException e) {
             log.error("Thread problem");
-        }
+        }*/
         //taskScheduler.stop();
         //  HibernateFactory.close();
     }
@@ -70,8 +91,6 @@ public class BattleMG {
         int pageCount = Integer.parseInt(args[2]);
         log.error("page to parse = " + pageCount);
         ReentrantLock reentrantLock = new ReentrantLock(true);
-
-
         magic(playersThreads, battlesThreads, pageCount, reentrantLock);
     }
 }

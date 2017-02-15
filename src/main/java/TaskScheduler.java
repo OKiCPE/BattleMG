@@ -33,6 +33,7 @@ public class TaskScheduler implements Runnable {
         TaskScheduler.number = number;
         init();
         return taskScheduler;
+
     }
 
     public void run() {
@@ -86,9 +87,9 @@ public class TaskScheduler implements Runnable {
 
 
         tasksInQueue.incrementAndGet();
-      //  taskLock.lock();
-       // condition.signal();
-      //  taskLock.unlock();
+        //  taskLock.lock();
+        // condition.signal();
+        //  taskLock.unlock();
         isReadyLock.lock();
         isReadyCondition.signal();
         isReadyLock.unlock();

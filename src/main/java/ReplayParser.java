@@ -21,8 +21,10 @@ public class ReplayParser implements Runnable {
     private MyQueue myQueue;
     private ReentrantLock reentrantLock;
     TaskScheduler taskScheduler;
+    int pageNumber;
 
-    ReplayParser(Element element, TaskScheduler taskScheduler, ReentrantLock reentrantLock) {
+    ReplayParser(int pageNumber, Element element, TaskScheduler taskScheduler, ReentrantLock reentrantLock) {
+        this.pageNumber=pageNumber;
         this.element = element;
         this.taskScheduler = taskScheduler;
         this.reentrantLock = reentrantLock;
