@@ -19,7 +19,7 @@ public class BattleMG {
         ReentrantLock restart = new ReentrantLock();
         Condition restartCondition = restart.newCondition();
         boolean readyToRestart = false;
-        for (int p = 0; p < 100; p++) {
+        for (int p = 0; p < 200_000; p++) {
             for (int i = pageCount; i > 0; i--) {
                 // log.error("added " + i);
                 service.submit(new GetBattles(i, taskScheduler, dbLock, restart, restartCondition, readyToRestart));

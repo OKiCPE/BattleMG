@@ -158,15 +158,16 @@ public class SingleTask implements Runnable {
                 parceData();
             }
         } catch (Exception e) {
-            log.error("================================CRASHED at BattleId " + battle.getBattleId());
+            log.error("               ================================ CRASHED at BattleId " + battle.getBattleId() + " =====");
             e.printStackTrace();
             try {
                 driver.quit();
             } catch (Exception p) {
                 e.printStackTrace();
             }
-
+            internal.unlock();
             init();
+            internal.lock();
             parceData();
         } finally {
 
@@ -219,11 +220,13 @@ public class SingleTask implements Runnable {
         //  driver.close();
 
         wasRun[currNumber]++;
-        if (wasRun[currNumber] >= 50) {
+        if (wasRun[currNumber] >= 100) {
             wasRun[currNumber] = 0;
-            log.error("================================ browser restarted =======================");
+            log.error("                  ================================ browser restarted =======================");
+            internal.unlock();
             driver.quit();
             init();
+            internal.lock();
         }
 
         rawTeamA = "";
