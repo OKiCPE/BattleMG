@@ -132,6 +132,14 @@ public class SingleTask implements Runnable {
         message.append("\t");
         tStart = System.currentTimeMillis();
         webElements = driver.findElements(By.className("team-players"));
+        if (webElements.isEmpty()) {
+            log.error("REPARSE PAGE");
+            driver.navigate().to(url);
+            webElements = driver.findElements(By.className("team-players"));
+
+        } else {
+
+        }
         rawTeamA = webElements.get(0).getText();
         rawTeamB = webElements.get(1).getText();
         teamA = new String[0];
@@ -155,7 +163,7 @@ public class SingleTask implements Runnable {
             parceData();
             if ((rawTeamA.isEmpty()) || (rawTeamB.isEmpty())) {
                 log.error("REPARSE " + battle.getBattleId());
-                parceData();
+               // parceData();
             }
         } catch (Exception e) {
             log.error("               ================================ CRASHED at BattleId " + battle.getBattleId() + " =====");
@@ -168,7 +176,7 @@ public class SingleTask implements Runnable {
             internal.unlock();
             init();
             internal.lock();
-            parceData();
+            // parceData();
         } finally {
 
         }

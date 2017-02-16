@@ -25,7 +25,7 @@ public class BattleMG {
         for (int pp = 0; pp < 5_000_000; pp++) {
             for (int z = pageCount; z > 0; z--) {
                 synchronized (ai) {
-                    while (ai.get() >= playersThreads) {
+                    while (ai.get() > playersThreads) {
                         try {
                             ai.wait();
                         } catch (InterruptedException e) {

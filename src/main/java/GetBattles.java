@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class GetBattles implements Runnable {
     private static final Logger log = LogManager.getLogger(GetBattles.class);
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:50.0) Gecko/20100101 Firefox/50.0";
-    private static final String BASE_URL = "http://warthunder.com/en/tournament/replay/page/";
+    private static final String BASE_URL = "http://warthunder.com/en/tournament/replay/type/tournaments/page/";
     private Map<String, String> cookies = new HashMap<>();
     private int pageNumber;
     private MyQueue myQueue;
@@ -74,6 +74,8 @@ public class GetBattles implements Runnable {
         Document doc = get.execute().parse();
         Elements replays = doc.select("a[class=replay__item]");
         log.error("                     =============== PAGE " + pageNumber + " ================");
+   //     log.error(url);
+     //   log.error(doc.title());
        /* if (pageNumber <= 2) {
             System.out.println("beforeready");
             restart.lock();
@@ -83,6 +85,10 @@ public class GetBattles implements Runnable {
             restartCondition.signal();
             restart.unlock();
         }*/
+
+
+
+
         for (Element replay : replays) {
             ReplayParser parser = new ReplayParser(pageNumber, replay, taskScheduler, reentrantLock);
             Thread thread = new Thread(parser);
@@ -93,10 +99,10 @@ public class GetBattles implements Runnable {
                 log.error("Thread interrupted " + e);
             }
         }
-        synchronized (ai) {
-            ai.decrementAndGet();
-            ai.notifyAll();
-        }
+
+
+
+
     }
 
     @Override
@@ -105,9 +111,21 @@ public class GetBattles implements Runnable {
         try {
             open();
         } catch (IOException e) {
+            log.error("========= SECOND PHASE START ===========");
+            try {
+                open();
+            } catch (IOException e1) {
+                log.error("----------------- SECOND PHASE FAIL ----------------------");
+                e1.printStackTrace();
+            }
             log.error("IOException at page " + pageNumber + " " + e);
         }
 
+        synchronized (ai) {
+            ai.decrementAndGet();
+            //log.error("TASK COMPLETE. IN POOL " + ai.get() + " TASKS");
+            ai.notifyAll();
+        }
 
       /*  try {
             Thread.sleep(3000);

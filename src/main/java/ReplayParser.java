@@ -24,7 +24,7 @@ public class ReplayParser implements Runnable {
     int pageNumber;
 
     ReplayParser(int pageNumber, Element element, TaskScheduler taskScheduler, ReentrantLock reentrantLock) {
-        this.pageNumber=pageNumber;
+        this.pageNumber = pageNumber;
         this.element = element;
         this.taskScheduler = taskScheduler;
         this.reentrantLock = reentrantLock;
@@ -178,7 +178,19 @@ public class ReplayParser implements Runnable {
             battle.setDuration(Time.valueOf(element.select("div[class=col-2 pr0 stat-column]")
                     .select("span[class=inlined text-left]")
                     .text()));
+
+
+            //disable player info
             taskScheduler.addTask(battle);
+
+
+            //save battle
+           /* session = HibernateFactory.getSession();
+            Transaction transaction = session.beginTransaction();
+            session.saveOrUpdate(battle);
+            transaction.commit();
+            session.close();*/
+
 
         }
     }
